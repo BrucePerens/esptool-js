@@ -88,7 +88,10 @@ function pollSerialStop() {
 
 async function pollSerial(e)
 {
-    return await navigator.locks.request('serialOperation', async lock => {
+    return await navigator.locks.request('serialOperation', {ifAvailable: true}, async (lock) => {
+        if (!lock) {
+            return;
+        }
         if (pollSerialInterval) {
             if (device.readable) {
                 try {
@@ -158,28 +161,33 @@ connectButton.onclick = async () => {
 }
 
 resetButton.onclick = async () => {
-    console.log("Reset");
-    if (device === null) {
-        device = await navigator.serial.requestPort({
-        });
-        transport = new Transport(device);
-    }
-
-    await transport.setDTR(false);
-    await new Promise(resolve => setTimeout(resolve, 100));
-    await transport.setDTR(true);
+    return await navigator.locks.request('serialOperation', async lock => {
+        console.log("Reset");
+        if (device === null) {
+            device = await navigator.serial.requestPort({
+            });
+            transport = new Transport(device);
+        }
+    
+        await transport.setDTR(false);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        await transport.setDTR(true);
+        console.log("Done");
+    });
 }
 
 eraseButton.onclick = async () => {
-    eraseButton.disabled = true;
-    try{
-        await esploader.erase_flash();
-    } catch (e) {
-        console.error(e);
-        term.writeln(`Error: ${e.message}`);
-    } finally {
-        eraseButton.disabled = false;
-    }
+    return await navigator.locks.request('serialOperation', async lock => {
+        eraseButton.disabled = true;
+        try{
+            await esploader.erase_flash();
+        } catch (e) {
+            console.error(e);
+            term.writeln(`Error: ${e.message}`);
+        } finally {
+            eraseButton.disabled = false;
+        }
+    });
 }
 
 addFile.onclick = () => {
@@ -254,6 +262,7 @@ function cleanUp() {
         filesDiv.style.display = "none";
         alertDiv.style.display = "none";
         consoleDiv.style.display = "initial";
+        pollSerialInterval = null;
     }
 }
 
@@ -299,58 +308,60 @@ function validate_program_inputs() {
 }
 
 programButton.onclick = async () => {
-    const alertMsg = document.getElementById("alertmsg");
-    const err = validate_program_inputs();
-
-    if (err != "success") {
-        alertMsg.innerHTML = "<strong>" + err + "</strong>";
-        alertDiv.style.display = "block";
-        return;
-    }
-
-    // Hide error message
-    alertDiv.style.display = "none";
-
-    const fileArray = [];
-    const progressBars = [];
-
-    for (let index = 1; index < table.rows.length; index++) {
-        const row = table.rows[index];
-
-        const offSetObj = row.cells[0].childNodes[0];
-        const offset = parseInt(offSetObj.value);
-
-        const fileObj = row.cells[1].childNodes[0];
-        const progressBar = row.cells[2].childNodes[0];
-
-        progressBar.value = 0;
-        progressBars.push(progressBar);
-
-        row.cells[2].style.display = "initial";
-        row.cells[3].style.display = "none";
-
-        fileArray.push({data:fileObj.data, address:offset});
-    }
-
-    try {
-        await esploader.write_flash({
-            fileArray,
-            flash_size: 'keep',
-            reportProgress(fileIndex, written, total) {
-                progressBars[fileIndex].value = written / total * 100;
-            },
-            calculateMD5Hash: (image) => CryptoJS.MD5(CryptoJS.enc.Latin1.parse(image)),
-        });
-    } catch (e) {
-        console.error(e);
-        term.writeln(`Error: ${e.message}`);
-    } finally {
-        // Hide progress bars and show erase buttons
-        for (let index = 1; index < table.rows.length; index++) {
-            table.rows[index].cells[2].style.display = "none";
-            table.rows[index].cells[3].style.display = "initial";
+    return await navigator.locks.request('serialOperation', async lock => {
+        const alertMsg = document.getElementById("alertmsg");
+        const err = validate_program_inputs();
+    
+        if (err != "success") {
+            alertMsg.innerHTML = "<strong>" + err + "</strong>";
+            alertDiv.style.display = "block";
+            return;
         }
-    }
+    
+        // Hide error message
+        alertDiv.style.display = "none";
+    
+        const fileArray = [];
+        const progressBars = [];
+    
+        for (let index = 1; index < table.rows.length; index++) {
+            const row = table.rows[index];
+    
+            const offSetObj = row.cells[0].childNodes[0];
+            const offset = parseInt(offSetObj.value);
+    
+            const fileObj = row.cells[1].childNodes[0];
+            const progressBar = row.cells[2].childNodes[0];
+    
+            progressBar.value = 0;
+            progressBars.push(progressBar);
+    
+            row.cells[2].style.display = "initial";
+            row.cells[3].style.display = "none";
+    
+            fileArray.push({data:fileObj.data, address:offset});
+        }
+    
+        try {
+            await esploader.write_flash({
+                fileArray,
+                flash_size: 'keep',
+                reportProgress(fileIndex, written, total) {
+                    progressBars[fileIndex].value = written / total * 100;
+                },
+                calculateMD5Hash: (image) => CryptoJS.MD5(CryptoJS.enc.Latin1.parse(image)),
+            });
+        } catch (e) {
+            console.error(e);
+            term.writeln(`Error: ${e.message}`);
+        } finally {
+            // Hide progress bars and show erase buttons
+            for (let index = 1; index < table.rows.length; index++) {
+                table.rows[index].cells[2].style.display = "none";
+                table.rows[index].cells[3].style.display = "initial";
+            }
+        }
+    });
 }
 
 // Attempt to close an open serial device before unloading the page, because
