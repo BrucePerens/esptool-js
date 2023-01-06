@@ -161,7 +161,7 @@ connectButton.onclick = async () => {
 }
 
 resetButton.onclick = async () => {
-    return await navigator.locks.request('serialOperation', async lock => {
+    return await navigator.locks.request('serialOperation', async (lock) => {
         console.log("Reset");
         if (device === null) {
             device = await navigator.serial.requestPort({
@@ -177,7 +177,7 @@ resetButton.onclick = async () => {
 }
 
 eraseButton.onclick = async () => {
-    return await navigator.locks.request('serialOperation', async lock => {
+    return await navigator.locks.request('serialOperation', async (lock) => {
         eraseButton.disabled = true;
         try{
             await esploader.erase_flash();
@@ -308,7 +308,7 @@ function validate_program_inputs() {
 }
 
 programButton.onclick = async () => {
-    return await navigator.locks.request('serialOperation', async lock => {
+    return await navigator.locks.request('serialOperation', async (lock) => {
         const alertMsg = document.getElementById("alertmsg");
         const err = validate_program_inputs();
     
