@@ -1,4 +1,3 @@
-console.log("Index.js 4");
 const baudrates = document.getElementById("baudrates");
 const connectButton = document.getElementById("connectButton");
 const disconnectButton = document.getElementById("disconnectButton");
@@ -92,10 +91,7 @@ function pollSerialStop() {
 
 async function pollSerial(e)
 {
-    return;
-
     if (pollSerialInterval) {
-        console.log("pollSerial");
         if (device.readable) {
             let val = await transport.rawRead();
             if (typeof val !== 'undefined') {
@@ -151,7 +147,7 @@ connectButton.onclick = async () => {
             filesDiv.style.display = "initial";
             consoleDiv.style.display = "none";
 
-            // pollSerialStart();
+            pollSerialStart();
         } catch(e) {
             console.error(e);
             term.writeln(`Error: ${e.message}`);
@@ -241,7 +237,9 @@ function cleanUp() {
         console.log("Disconnected.");
         term.writeln("Disconnected.");
         transport.disconnect();
-        device.forget();
+        try {
+            device.forget();
+        } catch {};
         device = null;
         transport = null;
         chip = null;
