@@ -2,8 +2,6 @@ const baudrates = document.getElementById("baudrates");
 const connectButton = document.getElementById("connectButton");
 const disconnectButton = document.getElementById("disconnectButton");
 const resetButton = document.getElementById("resetButton");
-const consoleStartButton = document.getElementById("consoleStartButton");
-const consoleStopButton = document.getElementById("consoleStopButton");
 const eraseButton = document.getElementById("eraseButton");
 const programButton = document.getElementById("programButton");
 const filesDiv = document.getElementById("files");
@@ -35,7 +33,6 @@ let pollSerialInterval;
 
 disconnectButton.style.display = "none";
 eraseButton.style.display = "none";
-consoleStopButton.style.display = "none";
 filesDiv.style.display = "none";
 
 
@@ -84,30 +81,33 @@ function pollSerialStart() {
 
 function pollSerialStop() {
   if (!pollSerialInterval) {
-    clearInterval(pollSerialInterval);
     pollSerialInterval = null;
+    clearInterval(pollSerialInterval);
   }
 }
 
 async function pollSerial(e)
 {
-    if (pollSerialInterval) {
-        if (device.readable) {
-            let val = await transport.rawRead();
-            if (typeof val !== 'undefined') {
-                term.write(val);
-            } else {
-                cleanUp();
+    return await navigator.locks.request('serialOperation', async lock => {
+        if (pollSerialInterval) {
+            if (device.readable) {
+                try {
+                    let val = await transport.rawRead({timeout: 1});
+                    if (typeof val !== 'undefined') {
+                        term.write(val);
+                    } else {
+                        cleanUp();
+                    }
+                } catch (e) { };
+            }
+            else {
+                pollSerialStop();
             }
         }
-    }
+    });
 }
 
 connectButton.onclick = async () => {
-//    device = await navigator.usb.requestDevice({
-//        filters: [{ vendorId: 0x10c4 }]
-//    });
-
     const options = {
       filters: [
         // This is the vendor and product ID for generic CP2102 serial-to-USB adapter
@@ -236,6 +236,7 @@ function cleanUp() {
     if (device) {
         console.log("Disconnected.");
         term.writeln("Disconnected.");
+        pollSerialStop();
         transport.disconnect();
         try {
             device.forget();
@@ -253,7 +254,6 @@ function cleanUp() {
         filesDiv.style.display = "none";
         alertDiv.style.display = "none";
         consoleDiv.style.display = "initial";
-        pollSerialStop();
     }
 }
 
@@ -264,38 +264,6 @@ disconnectButton.onclick = async () => {
     term.clear();
     cleanUp();
 };
-
-consoleStartButton.onclick = async () => {
-    if (device === null) {
-        device = await navigator.serial.requestPort({
-        });
-        transport = new Transport(device);
-    }
-    lblConsoleFor.style.display = "block";
-    consoleStartButton.style.display = "none";
-    consoleStopButton.style.display = "initial";
-    programDiv.style.display = "none";
-
-    await transport.connect();
-
-    while (true) {
-        let val = await transport.rawRead();
-        if (typeof val !== 'undefined') {
-            term.write(val);
-        } else {
-            break;
-        }
-    }
-    console.log("quitting console");
-}
-
-consoleStopButton.onclick = async () => {
-    await transport.disconnect();
-    term.clear();
-    consoleStartButton.style.display = "initial";
-    consoleStopButton.style.display = "none";
-    programDiv.style.display = "initial";
-}
 
 function validate_program_inputs() {
     let offsetArr = []
