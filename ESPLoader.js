@@ -160,12 +160,13 @@ class ESPLoader {
             // Check up-to next 100 packets for valid response packet
             for (let i=0 ; i<100 ; i++) {
                 var p = await this.transport.read({timeout: timeout});
-                //console.log("Response " + p);
+                if ( p.length < 8 )
+                    continue;
                 const resp = p[0];
                 const op_ret = p[1];
                 const len_ret = this._bytearray_to_short(p[2], p[3]);
                 const val = this._bytearray_to_int(p[4], p[5], p[6], p[7]);
-                //console.log("Resp "+resp + " " + op_ret + " " + len_ret + " " + val );
+                console.log("Resp "+resp + " " + op_ret + " " + len_ret + " " + val );
                 const data = p.slice(8);
                 if (resp == 1) {
                     if (op == null || op_ret == op) {

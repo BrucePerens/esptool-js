@@ -15,7 +15,7 @@ const table = document.getElementById('fileTable');
 const alertDiv = document.getElementById('alertDiv');
 
 //import { Transport } from './cp210x-webusb.js'
-import { Transport } from './webserial.js?a=1'
+import { Transport } from './webserial.js'
 import { ESPLoader } from './ESPLoader.js'
 import { ESPError } from './error.js'
 
@@ -80,9 +80,9 @@ function pollSerialStart() {
 }
 
 function pollSerialStop() {
-  if (!pollSerialInterval) {
-    pollSerialInterval = null;
+  if (pollSerialInterval) {
     clearInterval(pollSerialInterval);
+    pollSerialInterval = null;
   }
 }
 
@@ -98,13 +98,16 @@ async function pollSerial(e)
                     let val = await transport.rawRead({timeout: 1});
                     if (typeof val !== 'undefined') {
                         term.write(val);
-                    } else {
-                        cleanUp();
                     }
-                } catch (e) { };
+                } catch (e) {
+                    if (e.constructor.name != "TimeoutError") {
+                        console.error(e);
+                    }
+                }
             }
             else {
-                pollSerialStop();
+                console.log("device wasn't readable");
+                cleanUp();
             }
         }
     });
@@ -179,6 +182,7 @@ resetButton.onclick = async () => {
 eraseButton.onclick = async () => {
     return await navigator.locks.request('serialOperation', async (lock) => {
         eraseButton.disabled = true;
+
         try{
             await esploader.erase_flash();
         } catch (e) {

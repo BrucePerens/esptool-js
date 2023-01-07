@@ -104,7 +104,6 @@ class Transport {
     }
 
     async read({timeout=0, min_data=12} = {}) {
-        console.log("Read with timeout " + timeout);
         return await navigator.locks.request('readSerial', async lock => {
             let t;
             let packet = this.left_over;
@@ -148,10 +147,11 @@ class Transport {
     }
 
     async rawRead({timeout=0} = {}) {
-        return await navigator.locks.request('readSerial', async lock => {
+        return await navigator.locks.request('readSerial', async (lock) => {
             if (this.left_over.length != 0) {
                 const p = this.left_over;
                 this.left_over = new Uint8Array(0);
+                console.log("Returning leftover value");
                 return p;
             }
             const reader = this.device.readable.getReader();
@@ -166,7 +166,12 @@ class Transport {
                 if (done) {
                     throw new TimeoutError("Timeout");
                 }
+                console.log(`Got ${value.constructor.name}: ${JSON.stringify(value)}`);
                 return value;
+            } catch(e) {
+                if (e.constructor.name != "TimeoutError") {
+                    console.error(e);
+                }
             } finally {
                 if (timeout > 0) {
                     clearTimeout(t);
@@ -177,11 +182,15 @@ class Transport {
     }    
 
     async setRTS(state) {
-        await this.device.setSignals({requestToSend:state});
+        return await navigator.locks.request('readSerial', async (lock) => {
+            await this.device.setSignals({requestToSend:state});
+        });
     }
 
     async setDTR(state) {
-        await this.device.setSignals({dataTerminalReady:state});
+        return await navigator.locks.request('readSerial', async (lock) => {
+            await this.device.setSignals({dataTerminalReady:state});
+        });
     }
 
     async connect({baud=115200} = {}) {
