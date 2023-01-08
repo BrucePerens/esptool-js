@@ -150,6 +150,7 @@ connectButton.onclick = async () => {
             disconnectButton.style.display = "initial";
             eraseButton.style.display = "initial";
             resetButton.style.display = "initial";
+            stopButton.style.display = "initial";
             filesDiv.style.display = "initial";
             consoleDiv.style.display = "none";
 

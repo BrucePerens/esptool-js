@@ -1,4 +1,5 @@
 import { TimeoutError } from "./error.js";
+let decoder = new TextDecoder();
 
 class Transport {
     constructor(device) {
@@ -166,7 +167,6 @@ class Transport {
                 if (done) {
                     throw new TimeoutError("Timeout");
                 }
-                console.log(`Got ${value.constructor.name}: ${JSON.stringify(value)}`);
                 return value;
             } catch(e) {
                 if (e.constructor.name != "TimeoutError") {
