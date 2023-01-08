@@ -143,9 +143,11 @@ connectButton.onclick = async () => {
 
             console.log("Settings done for :" + chip);
             lblBaudrate.style.display = "none";
+            baudrates.style.display = "none";
+            lblRomBaudrate.style.display = "none";
+            romBaudrates.style.display = "none";
             lblConnTo.innerHTML = "Connected to device: " + chip;
             lblConnTo.style.display = "block";
-            baudrates.style.display = "none";
             connectButton.style.display = "none";
             disconnectButton.style.display = "initial";
             eraseButton.style.display = "initial";

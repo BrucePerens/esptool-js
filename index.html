@@ -22,7 +22,7 @@
         <div class="container" id="main">
             <div id="program">
                 <h3>ESP32 Tool</h3>
-                <label for="baudrates" id="lblBaudrate">Baudrate:</label>
+                <label for="baudrates" id="lblBaudrate">Programming Baudrate:</label>
                 <label style="display:none" id="lblConnTo">Connected to device: </label>
                 <select name="baudrates" id="baudrates">
                     <option value="921600">921600</option>
@@ -30,11 +30,20 @@
                     <option value="230400">230400</option>
                     <option value="115200">115200</option>
                 </select>
+                <label for="romBaudrates" id="lblRomBaudrate">ROM Baudrate:</label>
+		<!-- Default ROM baudrate for ESP32 is 115200. -->
+                <select name="romBaudrates" id="romBaudrates">
+                    <option value="115200">115200</option>
+                    <option value="230400">230400</option>
+                    <option value="460800">460800</option>
+                    <option value="921600">921600</option>
+                </select>
 
                 <input class="btn btn-info btn-sm" type="button" id="connectButton" value="Connect" />
                 <input class="btn btn-warning btn-sm" type="button" id="disconnectButton" value="Disconnect" />
                 <input class="btn btn-danger btn-sm" type="button" id="eraseButton" value="Erase Flash" />
                 <input class="btn btn-info btn-sm" type="button" id="resetButton" value="Reset" style="display:none;"/>
+                <input class="btn btn-info btn-sm" type="button" id="stopButton" value="Stop" style="display:none;"/>
 
                 <div class="alert alert-danger alert-dismissible" id="alertDiv" style="display:none; margin-top:10px">
                     <a href="#" class="close" aria-label="close" onclick="$('.alert').hide()">&times;</a>
