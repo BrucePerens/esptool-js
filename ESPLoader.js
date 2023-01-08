@@ -55,6 +55,7 @@ class ESPLoader {
         this.rom_baudrate = rom_baudrate;
         this.IS_STUB = false;
         this.chip = null;
+        this.in_programming_mode = false;
 
         if (terminal) {
             this.terminal.clear();
@@ -312,6 +313,16 @@ class ESPLoader {
         }
      }
 
+    async console_mode(reset = true) {
+        if (this.in_programming_mode) {
+            this.change_baud(true);
+            await this.transport.setRTS(true); // Execute the user program on the next reset.
+            if (reset) {
+                this.hard_reset();
+            }
+            this.in_programming_mode = false;
+        }
+    }
 
     async detect_chip({mode='default_reset'} = {}) {
         await this.connect({mode:mode});
@@ -478,6 +489,16 @@ class ESPLoader {
         await this.check_command({op_description:"leave compressed flash mode", op: this.ESP_FLASH_DEFL_END, data: pkt});
     }
 
+    async programming_mode() {
+        if (!this.in_programming_mode) {
+            this.flush_input();
+            await this.transport.setRTS(false); // Execute the ROM program on the next reset.
+            await this.hard_reset();
+            await this.run_stub();
+            await this.change_baud();
+            this.in_programming_mode = true;
+        }
+    }
     async run_spiflash_command(spiflash_command, data, read_bits) {
         // SPI_USR register flags
         var SPI_USR_COMMAND = (1 << 31);
@@ -651,8 +672,8 @@ class ESPLoader {
         throw new ESPError("Failed to start stub. Unexpected response");
     }
 
-    async change_baud() {
-        this.log("Changing baudrate to " + this.baudrate);
+    async change_baud(to_rom = false) {
+        this.log("Changing baudrate to " + to_rom ? this.rom_baudrate : this.baudrate);
         let second_arg = this.IS_STUB ? this.transport.baudrate : 0;
         let pkt = this._appendArray(this._int_to_bytearray(this.baudrate), this._int_to_bytearray(second_arg));
         let resp = await this.command({op:this.ESP_CHANGE_BAUDRATE, data:pkt});
@@ -679,10 +700,7 @@ class ESPLoader {
         if (typeof(this.chip._post_connect) != 'undefined') {
             await this.chip._post_connect(this);
         }
-
-        await this.run_stub();
-
-        await this.change_baud();
+        this.console_mode();
         return chip;
     }
 
@@ -887,6 +905,7 @@ class ESPLoader {
     }
 
     async hard_reset() {
+        this.IS_STUB = false;
         this.transport.setRTS(true);  // EN->LOW
         await this._sleep(100);
         this.transport.setRTS(false);
