@@ -1,14 +1,17 @@
-const baudrates = document.getElementById("baudrates");
+const programmingBaudrates = document.getElementById("programmingBaudrates");
+const lblProgrammingBaudrate = document.getElementById("lblProgrammingBaudrate");
+const romBaudrates = document.getElementById("romBaudrates");
+const lblRomBaudrate = document.getElementById("lblRomBaudrate");
 const connectButton = document.getElementById("connectButton");
 const disconnectButton = document.getElementById("disconnectButton");
 const resetButton = document.getElementById("resetButton");
+const stopButton = document.getElementById("stopButton");
 const eraseButton = document.getElementById("eraseButton");
 const programButton = document.getElementById("programButton");
 const filesDiv = document.getElementById("files");
 const terminal = document.getElementById("terminal");
 const programDiv = document.getElementById("program");
 const consoleDiv = document.getElementById("console");
-const lblBaudrate = document.getElementById("lblBaudrate");
 const lblConnTo = document.getElementById("lblConnTo");
 const tableBody = document.getElementById("tableBody");
 const table = document.getElementById('fileTable');
@@ -133,7 +136,7 @@ connectButton.onclick = async () => {
             transport = new Transport(device);
             device.addEventListener('disconnect', cleanUp);
             navigator.serial.addEventListener('disconnect', cleanUp);
-            esploader = new ESPLoader(transport, baudrates.value, term);
+            esploader = new ESPLoader(transport, programmingBaudrates.value, term);
             connected = true;
     
             chip = await esploader.main_fn();
@@ -142,8 +145,8 @@ connectButton.onclick = async () => {
             // await esploader.flash_id();
 
             console.log("Settings done for :" + chip);
-            lblBaudrate.style.display = "none";
-            baudrates.style.display = "none";
+            lblProgrammingBaudrate.style.display = "none";
+            programmingBaudrates.style.display = "none";
             lblRomBaudrate.style.display = "none";
             romBaudrates.style.display = "none";
             lblConnTo.innerHTML = "Connected to device: " + chip;
@@ -260,11 +263,15 @@ function cleanUp() {
         transport = null;
         chip = null;
         connected = false;
-        baudrates.style.display = "initial";
+        lblProgrammingBaudrate.style.display = "initial";
+        programmingBaudrates.style.display = "initial";
+        lblRomBaudrate.style.display = "initial";
+        romBaudrates.style.display = "initial";
         connectButton.style.display = "initial";
         disconnectButton.style.display = "none";
         eraseButton.style.display = "none";
         resetButton.style.display = "none";
+        stopButton.style.display = "none";
         lblConnTo.style.display = "none";
         filesDiv.style.display = "none";
         alertDiv.style.display = "none";

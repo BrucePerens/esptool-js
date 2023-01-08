@@ -22,9 +22,8 @@
         <div class="container" id="main">
             <div id="program">
                 <h3>ESP32 Tool</h3>
-                <label for="baudrates" id="lblBaudrate">Programming Baudrate:</label>
-                <label style="display:none" id="lblConnTo">Connected to device: </label>
-                <select name="baudrates" id="baudrates">
+                <label for="programmingBaudrates" id="lblProgrammingBaudrate">Programming Baudrate:</label>
+                <select name="programmingBaudrates" id="programmingBaudrates">
                     <option value="921600">921600</option>
                     <option value="460800">460800</option>
                     <option value="230400">230400</option>
@@ -38,6 +37,7 @@
                     <option value="460800">460800</option>
                     <option value="921600">921600</option>
                 </select>
+                <label style="display:none" id="lblConnTo">Connected to device: </label>
 
                 <input class="btn btn-info btn-sm" type="button" id="connectButton" value="Connect" />
                 <input class="btn btn-warning btn-sm" type="button" id="disconnectButton" value="Disconnect" />
