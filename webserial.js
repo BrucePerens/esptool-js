@@ -194,6 +194,7 @@ class Transport {
     }
 
     async connect({baud=115200} = {}) {
+        console.log(`Connect at ${baud}`);
         await this.device.open({baudRate: baud});
         this.baudrate = baud;
         this.left_over = new Uint8Array(0);

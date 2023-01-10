@@ -97,6 +97,7 @@ async function pollSerial(e)
         }
         if (pollSerialInterval) {
             if (device.readable) {
+                console.log("pollSerial");
                 try {
                     let val = await transport.rawRead({timeout: 1});
                     if (typeof val !== 'undefined') {
@@ -159,10 +160,11 @@ connectButton.onclick = async () => {
             filesDiv.style.display = "initial";
             consoleDiv.style.display = "none";
 
+            await _sleep(100);
             pollSerialStart();
         } catch(e) {
             console.error(e);
-            term.writeln(`\n\rError: ${e.message}`);
+            term.writeln(`Error: ${e.message}`);
             cleanUp();
             return;
         }
@@ -171,36 +173,34 @@ connectButton.onclick = async () => {
 
 resetButton.onclick = async () => {
     return await navigator.locks.request('serialOperation', async (lock) => {
+        console.log("Reset");
+        if (device === null) {
+            device = await navigator.serial.requestPort({
+            });
+            transport = new Transport(device);
+        }
+    
         await transport.setDTR(false);
         await new Promise(resolve => setTimeout(resolve, 100));
         await transport.setDTR(true);
+        console.log("Done");
     });
 }
-
-stopButton.onclick = async () => {
-    return await navigator.locks.request('serialOperation', async (lock) => {
-        // Stop the program: reset and start the ESP32 onboard ROM.
-        await transport.setRTS(false); // Execute the onboard ROM.
-        await esploader.hard_reset();
-    });
-}
-
 
 eraseButton.onclick = async () => {
     return await navigator.locks.request('serialOperation', async (lock) => {
         eraseButton.disabled = true;
 
-        esploader.programming_mode();
+        await esploader.program_mode();
         try{
             await esploader.erase_flash();
         } catch (e) {
             console.error(e);
-            term.writeln(`\n\rError: ${e.message}`);
+            term.writeln(`Error: ${e.message}`);
         } finally {
-            // Don't bother to enter console mode, there's no program and the ESP32
-            // on-chip ROM would just spew cybercrud.
             eraseButton.disabled = false;
         }
+        await esploader.console_mode();
     });
 }
 
@@ -257,7 +257,7 @@ function removeRow(row) {
 function cleanUp() {
     if (device) {
         console.log("Disconnected.");
-        term.writeln("\n\rDisconnected.");
+        term.writeln("Disconnected.");
         pollSerialStop();
         transport.disconnect();
         try {
@@ -342,8 +342,6 @@ programButton.onclick = async () => {
         const fileArray = [];
         const progressBars = [];
     
-        esploader.programming_mode();
-
         for (let index = 1; index < table.rows.length; index++) {
             const row = table.rows[index];
     
@@ -373,15 +371,13 @@ programButton.onclick = async () => {
             });
         } catch (e) {
             console.error(e);
-            term.writeln(`\n\rError: ${e.message}`);
+            term.writeln(`Error: ${e.message}`);
         } finally {
             // Hide progress bars and show erase buttons
             for (let index = 1; index < table.rows.length; index++) {
                 table.rows[index].cells[2].style.display = "none";
                 table.rows[index].cells[3].style.display = "initial";
             }
-	    // Start the program and display the console.
-            esploader.console_mode();
         }
     });
 }
