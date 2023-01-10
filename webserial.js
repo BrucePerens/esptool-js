@@ -105,6 +105,7 @@ class Transport {
     }
 
     async read({timeout=0, min_data=12} = {}) {
+        decoder = new TextDecoder();
         return await navigator.locks.request('readSerial', async lock => {
             let t;
             let packet = this.left_over;
@@ -152,7 +153,6 @@ class Transport {
             if (this.left_over.length != 0) {
                 const p = this.left_over;
                 this.left_over = new Uint8Array(0);
-                console.log("Returning leftover value");
                 return p;
             }
             const reader = this.device.readable.getReader();
@@ -194,7 +194,6 @@ class Transport {
     }
 
     async connect({baud=115200} = {}) {
-        console.log(`Connect at ${baud}`);
         await this.device.open({baudRate: baud});
         this.baudrate = baud;
         this.left_over = new Uint8Array(0);

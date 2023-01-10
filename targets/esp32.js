@@ -95,7 +95,7 @@ export default class ESP32ROM {
 
   static read_efuse = async (loader, offset) => {
     var addr = this.EFUSE_RD_REG_BASE + 4 * offset;
-    console.log("Read efuse " + addr);
+    // console.log("Read efuse " + addr);
     return await loader.read_reg({ addr: addr });
   };
 

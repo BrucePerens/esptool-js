@@ -53,6 +53,8 @@ class ESPLoader {
         this.baudrate = baudrate;
         this.terminal = terminal;
         this.rom_baudrate = rom_baudrate;
+        this.current_baudrate = rom_baudrate;
+        this.mode = undefined;
         this.IS_STUB = false;
         this.chip = null;
 
@@ -129,10 +131,16 @@ class ESPLoader {
     }
 
     async flush_input() {
-        try {
-            await this.transport.readRaw({timeout:200});
-        } catch(e) {
+        // Somewhat more robust flush input. Use read() to flush the slip buffer too.
+        // Don't stop until input stops.
+        for (var i = 0; i < 100; i++) {
+            try {
+                const {value, done} = await this.transport.read({timeout:200});
+            } catch {
+                return;
+            }
         }
+        console.log("flush_input(): input is spewing.");
     }
 
     async command({op=null, data=[], chk=0, wait_response=true, timeout=3000} = {})  {
@@ -160,13 +168,14 @@ class ESPLoader {
             // Check up-to next 100 packets for valid response packet
             for (let i=0 ; i<100 ; i++) {
                 var p = await this.transport.read({timeout: timeout});
-                if ( p.length < 8 )
+                if ( p.length < 8 ) {
                     continue;
+                }
                 const resp = p[0];
                 const op_ret = p[1];
                 const len_ret = this._bytearray_to_short(p[2], p[3]);
                 const val = this._bytearray_to_int(p[4], p[5], p[6], p[7]);
-                console.log("Resp "+resp + " " + op_ret + " " + len_ret + " " + val );
+                // console.log("Resp "+resp + " " + op_ret + " " + len_ret + " " + val );
                 const data = p.slice(8);
                 if (resp == 1) {
                     if (op == null || op_ret == op) {
@@ -204,7 +213,7 @@ class ESPLoader {
     }
 
     async sync() {
-        console.log("Sync");
+        // console.log("Sync");
         var cmd = new Uint8Array(36);
         var i;
         cmd[0] = 0x07;
@@ -219,13 +228,13 @@ class ESPLoader {
             const resp = await this.command({op:0x08, data:cmd, timeout:100});
             return resp;
         } catch(e) {
-            console.log("Sync err " + e);
+            // console.log("Sync err " + e);
             throw e;
         }
     }
 
     async _connect_attempt({mode='default_reset', esp32r0_delay=false} = {}) {
-        console.log("_connect_attempt " + mode + " " + esp32r0_delay);
+        // console.log("_connect_attempt " + mode + " " + esp32r0_delay);
         if (mode !== 'no_reset') {
             await this.transport.setDTR(false);
             await this.transport.setRTS(true);
@@ -322,7 +331,7 @@ class ESPLoader {
     }
 
     async check_command({op_description="", op=null, data=[], chk=0, timeout=3000} = {}) {
-        console.log("check_command " + op_description) ;
+        // console.log("check_command " + op_description) ;
         var resp = await this.command({op:op, data:data, chk:chk, timeout:timeout});
         if (resp[1].length > 4) {
             return resp[1];
@@ -333,7 +342,7 @@ class ESPLoader {
 
     async mem_begin(size, blocks, blocksize, offset) {
         /* XXX: Add check to ensure that STUB is not getting overwritten */
-        console.log("mem_begin " + size + " " + blocks + " " + blocksize + " " + offset.toString(16));
+        // console.log("mem_begin " + size + " " + blocks + " " + blocksize + " " + offset.toString(16));
         var pkt = this._appendArray(this._int_to_bytearray(size), this._int_to_bytearray(blocks));
         pkt = this._appendArray(pkt, this._int_to_bytearray(blocksize));
         pkt = this._appendArray(pkt, this._int_to_bytearray(offset));
@@ -606,8 +615,6 @@ class ESPLoader {
     }
 
     async run_stub() {
-        this.log("Uploading stub...");
-
         var decoded = atob(this.chip.ROM_TEXT);
         var chardata = decoded.split('').map(function(x){return x.charCodeAt(0);});
         var bindata = new Uint8Array(chardata);
@@ -635,14 +642,12 @@ class ESPLoader {
             await this.mem_block(data.slice(from_offs, to_offs), i);
         }
 
-        this.log("Running stub...");
         await this.mem_finish(this.chip.ENTRY);
 
         // Check up-to next 100 packets to see if stub is running
         for (let i=0 ; i<100 ; i++) {
             const res = await this.transport.read({timeout: 1000, min_data: 6});
             if (res[0] === 79 && res[1] === 72 && res[2] === 65 && res[3] === 73) {
-                this.log("Stub running...");
                 this.IS_STUB = true;
                 this.FLASH_WRITE_SIZE = 0x4000;
                 return this.chip;
@@ -652,7 +657,9 @@ class ESPLoader {
     }
 
     async change_baud(baudrate = this.baudrate, command_esp_to_change_baud = true) {
-        this.log("Changing baudrate to " + baudrate);
+        if (baudrate == this.current_baudrate) {
+            return;
+        }
         if (command_esp_to_change_baud) {
             let second_arg = this.IS_STUB ? this.transport.baudrate : 0;
             let pkt = this._appendArray(this._int_to_bytearray(baudrate), this._int_to_bytearray(second_arg));
@@ -661,34 +668,64 @@ class ESPLoader {
         await this.transport.disconnect();
         await this._sleep(50);
         await this.transport.connect({baud:baudrate});
-        try {
-            await this.transport.rawRead({timeout:500});
-        } catch (e) {
-            if (e.constructor.name != "TimeoutError")
-                console.error(e);
-        }
+        this.current_baudrate = baudrate;
+        // try {
+            // await this.transport.rawRead({timeout:500});
+        // } catch (e) {
+            // if (e.constructor.name != "TimeoutError")
+                // console.error(e);
+        // }
     }
 
     async program_mode() {
-        console.log("Program mode");
+        if (this.mode == "program") {
+            try {
+		// Check that the user hasn't pushed the reset button and knocked
+                // us out of program mode.
+                await this.flush_input();
+                await this.sync();
+                return;
+            } catch {
+            }
+        }
+        this.mode = undefined;
         await this.transport.setDTR(true);
         await this.hard_reset(); // Changes baud rate to ROM baudrate.
+        await this._sleep(400);
+        await this.transport.setDTR(false);
+        await this.flush_input();
+        for (var i = 0; ; i++) {
+            try {
+                await this.sync();
+                break;
+            } catch {
+                if (i >= 10) {
+			throw new ESPError("Failed to synchronize the command input of the ESP.");
+                }
+            }
+        }
         if (typeof(this.chip._post_connect) != 'undefined') {
             await this.chip._post_connect(this);
         }
 
-        await this.run_stub();
-
         await this.change_baud(this.baudrate);
+        await this.run_stub();
+        this.mode = "program";
+        this.log(`ESP FLASH Programming mode at ${this.current_baudrate} baud.`);
     }
 
     async console_mode(baurdate) {
-        console.log("Console mode");
+        if (this.mode == "console") {
+            return;
+        }
+        this.mode = undefined;
 	await this.hard_reset(); // Changes baud rate to ROM baudrate.
         await this.transport.setDTR(false);
         await this.transport.setRTS(true);
         await this._sleep(100);
         await this.transport.setRTS(false);
+        this.mode = "console";
+        this.log(`User Program Console mode at ${this.current_baudrate} baud.`);
     }
 
     async main_fn({mode='default_reset'} = {}) {
@@ -906,6 +943,7 @@ class ESPLoader {
 
     async hard_reset() {
         await this.transport.setRTS(true);  // Assert RESET. EN->LOW
+        this.IS_STUB = false;
         await this._sleep(100);
         // When the device comes out of reset, its serial interface will be set to
         // the ROM baudrate. So, make sure the transport baud rate is set accordingly.

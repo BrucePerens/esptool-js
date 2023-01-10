@@ -97,7 +97,6 @@ async function pollSerial(e)
         }
         if (pollSerialInterval) {
             if (device.readable) {
-                console.log("pollSerial");
                 try {
                     let val = await transport.rawRead({timeout: 1});
                     if (typeof val !== 'undefined') {
@@ -162,6 +161,7 @@ connectButton.onclick = async () => {
 
             await _sleep(100);
             pollSerialStart();
+            esploader.console_mode();
         } catch(e) {
             console.error(e);
             term.writeln(`Error: ${e.message}`);
@@ -173,17 +173,14 @@ connectButton.onclick = async () => {
 
 resetButton.onclick = async () => {
     return await navigator.locks.request('serialOperation', async (lock) => {
-        console.log("Reset");
-        if (device === null) {
-            device = await navigator.serial.requestPort({
-            });
-            transport = new Transport(device);
-        }
-    
-        await transport.setDTR(false);
-        await new Promise(resolve => setTimeout(resolve, 100));
-        await transport.setDTR(true);
-        console.log("Done");
+        await esploader.console_mode();
+        await esploader.hard_reset();
+    });
+}
+
+stopButton.onclick = async () => {
+    return await navigator.locks.request('serialOperation', async (lock) => {
+        await esploader.program_mode();
     });
 }
 
@@ -191,8 +188,8 @@ eraseButton.onclick = async () => {
     return await navigator.locks.request('serialOperation', async (lock) => {
         eraseButton.disabled = true;
 
-        await esploader.program_mode();
         try{
+            await esploader.program_mode();
             await esploader.erase_flash();
         } catch (e) {
             console.error(e);
@@ -200,7 +197,6 @@ eraseButton.onclick = async () => {
         } finally {
             eraseButton.disabled = false;
         }
-        await esploader.console_mode();
     });
 }
 
