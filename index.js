@@ -22,8 +22,12 @@ import { Transport } from './webserial.js'
 import { ESPLoader } from './ESPLoader.js'
 import { ESPError } from './error.js'
 
-let term = new Terminal({cols:120, rows:40});
+const term = new Terminal();
+// const fitAddon = new FitAddon();
+// term.loadAddon(fitAddon);
+term.loadAddon(new WebLinksAddon());
 term.open(terminal);
+// fitAddon.fit();
 
 let device = null;
 let transport;
@@ -357,6 +361,7 @@ programButton.onclick = async () => {
         }
     
         try {
+            await esploader.program_mode();
             await esploader.write_flash({
                 fileArray,
                 flash_size: 'keep',
@@ -374,6 +379,7 @@ programButton.onclick = async () => {
                 table.rows[index].cells[2].style.display = "none";
                 table.rows[index].cells[3].style.display = "initial";
             }
+            await esploader.console_mode();
         }
     });
 }

@@ -680,9 +680,8 @@ class ESPLoader {
     async program_mode() {
         if (this.mode == "program") {
             try {
-		// Check that the user hasn't pushed the reset button and knocked
-                // us out of program mode.
-                await this.flush_input();
+		// Make sure that the user hasn't pushed the reset button and knocked
+                // us out of program mode. If they have, re-enter program mode.
                 await this.sync();
                 return;
             } catch {
