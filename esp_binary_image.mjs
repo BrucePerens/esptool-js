@@ -1,32 +1,63 @@
-import { ESPError } from './error.mjs'
+// Classes for handling the ESP binary image file.
 
-const ESP_MAGIC = 0xe9;
-const ESP_CHECKSUM_MAGIC = 0xef;
+import { ESPError } from './error.mjs'
+export { ESPBinaryImageFile }
+
+// Class representing an ESP binary image file.
+class ESPBinaryImage {
+  data;
+  size;
+  overlaps = false;
+  header;
+
+  static async FromURL(url) {
+    let response = await fetch(url);
+
+    if ( response.ok != true ) {
+      throw new ESPError(`${url}: ${response.statusText}`);
+    }
+    let buffer = await response.arrayBuffer();
+    let data = new DataView(buffer);
+     
+    return new this(data);
+  }
+
+  constructor(d) {
+    this.data = d;
+    this.size = this.data.byteLength;
+    this.header = new ESPFileHeader(this.data);
+  }
+};
 
 class ESPFileHeader {
-  // These are the actual header data, in order of appearance.
-  magic;
-  numberOfSegments;
-  spiFlashMode;
-  flashSizeAndFrequency;
-  entryPointAddress;
-  wpPin;
-  wpPinWhenSPIPinsAreSetViaEfuse;
-  spiFlashDriveSettings;
+  // Constants
+  get CHECKSUM_MAGIC() { return 0xef; }
+  get MAGIC() { return 0xe9; }
+
+  // This is the ESP binary image file header data.
   chipID;
   deprecatedMinimalChipRevision;
-  minimalChipRevision;
-  maximalChipRevision;
-  reservedBytes = new Uint8Array(4);
+  entryPointAddress;
+  flashSizeAndFrequency;
   hashAppended;
+  magic;
+  maximalChipRevision;
+  minimalChipRevision;
+  numberOfSegments;
+  reservedBytes = new Uint8Array(4);
   segments = [];
+  spiFlashDriveSettings;
+  spiFlashMode;
+  wpPin;
+  wpPinWhenSPIPinsAreSetViaEfuse;
 
   // These are ancillary data derived from the header.
   valid = false;
 
   constructor(data) {
+    // Extract the header data into the instance fields.
     this.magic = data.getUint8(0);
-    if (this.magic != ESP_MAGIC) {
+    if (this.magic != this.MAGIC) {
       throw new ESPError("This file doen't have a valid magic number for an ESP binary.");
     }
     this.numberOfSegments = data.getUint8(1);
@@ -72,28 +103,4 @@ class ESPSegmentHeader {
   }
 };
 
-class CodeFile {
-  data;
-  size;
-  overlaps = false;
-  header;
-
-  static async FromURL(url) {
-    let response = await fetch(url);
-
-    if ( response.ok != true ) {
-      throw new ESPError(`${url}: ${response.statusText}`);
-    }
-    let buffer = await response.arrayBuffer();
-    let data = new DataView(buffer);
-     
-    return new this(data);
-  }
-
-  constructor(d) {
-    this.data = d;
-    this.size = this.data.byteLength;
-    this.header = new ESPFileHeader(this.data);
-  }
-};
-let c = await CodeFile.FromURL("https://perens.com/static/Rigcontrol/firmware/k6bp_rigcontrol.bin");
+let c = await ESPBinaryImage.FromURL("https://perens.com/static/Rigcontrol/firmware/k6bp_rigcontrol.bin");
