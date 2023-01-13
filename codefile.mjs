@@ -32,13 +32,13 @@ class ESPFileHeader {
     this.numberOfSegments = data.getUint8(1);
     this.spiFlashMode = data.getUint8(2);
     this.flashSizeAndFrequency = data.getUint8(3);
-    this.entryPointAddress = data.getUint32(4);
+    this.entryPointAddress = data.getUint32(4, true);
     this.wpPin = data.getUint8(8);
     // This is stored in 3 bytes.
-    this.wpPinWhenSPIPinsAreSetViaEfuse = (data.getUint32(9) >> 8) & 0x00ffffff;
-    this.spiFlashDriveSettings = data.getUint16(12);
-    this.chipID = data.getUint16(12);
-    this.deprecatedMinimalChipRevision = data.getUint16(14);
+    this.wpPinWhenSPIPinsAreSetViaEfuse = (data.getUint32(9, true) >> 8) & 0x00ffffff;
+    this.spiFlashDriveSettings = data.getUint16(12, true);
+    this.chipID = data.getUint16(12, true);
+    this.deprecatedMinimalChipRevision = data.getUint16(14, true);
     // How odd that these would be BCD.
     let major = data.getUint8(15);
     let minor = data.getUint8(16);
@@ -53,12 +53,10 @@ class ESPFileHeader {
 
     let o = 0;
     for (let i = 0; i < this.numberOfSegments; i++ ) {
-      try {
-      let offset = data.getUint32(36 + o);
-      let size = data.getUint32(40 + o);
+      let offset = data.getUint32(24 + o, true);
+      let size = data.getUint32(28 + o, true);
       o += (8 + size);
       this.segments.push(new ESPSegmentHeader(offset, size));
-      } catch {};
     }
 
     this.valid = true;
@@ -76,10 +74,7 @@ class ESPSegmentHeader {
 
 class CodeFile {
   data;
-  offset = 0;
   size;
-  checksum;
-  valid = false;
   overlaps = false;
   header;
 
@@ -87,7 +82,6 @@ class CodeFile {
     let response = await fetch(url);
 
     if ( response.ok != true ) {
-      console.log(response.ok)
       throw new ESPError(`${url}: ${response.statusText}`);
     }
     let buffer = await response.arrayBuffer();
@@ -103,4 +97,3 @@ class CodeFile {
   }
 };
 let c = await CodeFile.FromURL("https://perens.com/static/Rigcontrol/firmware/k6bp_rigcontrol.bin");
-console.table(c.header.segments);
