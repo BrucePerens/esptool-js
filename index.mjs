@@ -12,7 +12,17 @@ import 'xterm-addon-web-links';
 export { showConnectPage, showConsolePage, showProgramPage };
 
 // Check that the required APIs are available.
-if (typeof SerialPort == "undefined" || typeof navigator.locks == "undefined") {
+if (
+    typeof Serial == "undefined"
+    || typeof SerialPort == "undefined"
+    || typeof navigator == "undefined"
+    || typeof navigator.locks == "undefined"
+    || typeof HTMLScriptElement == "undefined"
+    || typeof HTMLScriptElement.supports == "undefined"
+    || typeof fetch == "undefined"
+    || HTMLScriptElement.supports("module") != true
+    || HTMLScriptElement.supports("importmap") != true
+   ) {
   document.open();
   document.write(`
    <html><body>
