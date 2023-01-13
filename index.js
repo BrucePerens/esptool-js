@@ -32,9 +32,11 @@ const doc = {};
   "consolePage",
   "deviceName",
   "disconnectButton",
+  "disconnectConsoleButton",
   "eraseButton",
   "fileTable",
-  "goToProgrammingPageButton",
+  "goToConsolePageButton",
+  "goToProgramPageButton",
   "programButton",
   "programPage",
   "programmingBaudrates",
@@ -66,8 +68,10 @@ ctx.fitAddon.fit();
 doc.addFileButton.onclick = doAddFile;
 doc.connectButton.onclick = doConnect;
 doc.disconnectButton.onclick = doDisconnect;
+doc.disconnectConsoleButton.onclick = doDisconnect;
 doc.eraseButton.onclick = doErase;
-doc.goToProgrammingPageButton.onclick = showProgramPage;
+doc.goToConsolePageButton.onclick = doConsoleMode;
+doc.goToProgramPageButton.onclick = showProgramPage;
 doc.programButton.onclick = doProgram;
 doc.resetButton.onclick = doReset;
 
@@ -162,7 +166,7 @@ async function doConnect() {
   } catch(e) {
     console.error(e);
     ctx.term.writeln(`Error: ${e.message}`);
-    cleanUp();
+    showConnectPage();
     return;
   }
 }
@@ -183,6 +187,11 @@ async function doErase() {
       doc.eraseButton.disabled = false;
     }
   });
+}
+
+async function doConsoleMode() {
+  showConsolePage();
+  await ctx.esploader.console_mode();
 }
 
 // Reset the ESP device.
@@ -408,6 +417,7 @@ async function doProgram() {
         doc.fileTable.rows[index].cells[2].style.display = "none";
         doc.fileTable.rows[index].cells[3].style.display = "initial";
       }
+      showConsolePage();
       await esploader.console_mode();
     }
   });

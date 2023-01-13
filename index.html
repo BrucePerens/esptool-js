@@ -39,7 +39,8 @@
 
 <body id="body">
   <div id="consolePage" style="display:none;padding=1em;">
-    <input class="btn btn-info btn-sm" type="button" id="goToProgrammingPageButton" value="Program">
+    <input class="btn btn-info btn-sm" type="button" id="goToProgramPageButton" value="Program">
+    <input class="btn btn-info btn-sm" type="button" id="disconnectConsoleButton" value="Disconnect">
     <input class="btn btn-info btn-sm" type="button" id="resetButton" value="Reset">
     <output id="terminal" style="object-fit: cover;"></div>
   </div>
@@ -82,10 +83,9 @@
   <div id="programPage" style="display:none;">
     <label>Connected to device:</label>
     <output id="deviceName"></output>
-    <input class="btn btn-warning btn-sm" type=
-    "button" id="disconnectButton" value="Disconnect">
-    <input class="btn btn-danger btn-sm" type="button" id=
-    "eraseButton" value="Erase Flash">
+    <input class="btn btn-warning btn-sm" type="button" id="goToConsolePageButton" value="Console">
+    <input class="btn btn-warning btn-sm" type="button" id="disconnectButton" value="Disconnect">
+    <input class="btn btn-danger btn-sm" type="button" id="eraseButton" value="Erase Flash">
     <div class="alert alert-danger alert-dismissible" id="alertDiv"
     style="display:none; margin-top:10px">
       <a href="#" class="close" aria-label="close" onclick=
