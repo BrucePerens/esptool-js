@@ -37,7 +37,13 @@
   <script src="./node_modules/crypto-js/crypto-js.js"></script>
 </head>
 
-<body>
+<body id="body">
+  <div id="consolePage" style="display:none;padding=1em;">
+    <input class="btn btn-info btn-sm" type="button" id="goToProgrammingPageButton" value="Program">
+    <input class="btn btn-info btn-sm" type="button" id="resetButton" value="Reset">
+    <output id="terminal" style="object-fit: cover;"></div>
+  </div>
+
   <div id="connectPage">
     <h3>ESP32 Tool</h3><label for="programmingBaudrates" id="lblProgrammingBaudrate">Programming Baudrate:</label>
     <select name="programmingBaudrates" id="programmingBaudrates">
@@ -73,7 +79,7 @@
     "connectButton" value="Connect">
   </div>
 
-  <div id="programPage">
+  <div id="programPage" style="display:none;">
     <label>Connected to device:</label>
     <output id="deviceName"></output>
     <input class="btn btn-warning btn-sm" type=
@@ -100,13 +106,5 @@
     </div><output id="list"></output>
   </div>
 
-  <div id="consolePage">
-    <div id="console">
-      <input class="btn btn-info btn-sm" type="button" id=
-      "resetButton" value="Reset" style="display:none;">
-      <label style="display:none" id="lblConsoleFor">Connected to
-      device:</label>
-    </div><output id="terminal"></output>
-  </div>
 </body>
 </html>

@@ -1,42 +1,15 @@
 // Import all of the modules that are defined in the importmap.
-import 'bootstrap'
-import 'error'
-import 'ESPLoader'
-import 'jquery'
-import 'pako'
-import 'webserial'
+import 'bootstrap';
+import 'error';
+import { ESPLoader } from 'ESPLoader';
+import 'jquery';
+import 'pako';
+import { Transport } from 'webserial';
 import 'xterm';
 import 'xterm-addon-fit';
 import 'xterm-addon-web-links';
 
-// Attach to all of the necessary elements in the HTML document.
-const doc = {};
-[
-  "connectButton",
-  "connectPage",
-  "consolePage",
-  "deviceName",
-  "disconnectButton",
-  "eraseButton",
-  "fileTable",
-  "programButton",
-  "programPage",
-  "programmingBaudrates",
-  "resetButton",
-  "romBaudrates",
-  "terminal"
-].forEach(e => { doc[e] = document.getElementById(e) });
-
-const ctx = {
-  "chip": null,
-  "device": null,
-  "esploader": null,
-  "fitAddon": new FitAddon.FitAddon(), // Not a proper ES6 module for the Browser.
-  "pollSerialInterval": null,
-  "term": new Terminal(),
-  "transport": null,
-  "webLinksAddon": new WebLinksAddon.WebLinksAddon() // Also not proper ES6 module.
-};
+export { showConnectPage, showConsolePage, showProgramPage };
 
 // Check that the required APIs are available.
 if (typeof SerialPort == "undefined" || typeof navigator.locks == "undefined") {
@@ -49,162 +22,64 @@ if (typeof SerialPort == "undefined" || typeof navigator.locks == "undefined") {
   document.close();
 }
 
+// Attach to all of the necessary elements in the HTML document.
+const doc = {};
+[
+  "addFileButton",
+  "connectButton",
+  "connectPage",
+  "connectingPage",
+  "consolePage",
+  "deviceName",
+  "disconnectButton",
+  "eraseButton",
+  "fileTable",
+  "goToProgrammingPageButton",
+  "programButton",
+  "programPage",
+  "programmingBaudrates",
+  "resetButton",
+  "romBaudrates",
+  "terminal"
+].forEach(e => { doc[e] = document.getElementById(e) });
+
+// These would otherwise be global variables.
+const ctx = {
+  "chip": null,
+  "device": null,
+  "esploader": null,
+  "fitAddon": new FitAddon.FitAddon(), // Not a proper ES6 module for the Browser.
+  "pollSerialInterval": null,
+  "term": new Terminal({ "cursorBlink": true, "cols": 80, "rows": 50 }),
+  "transport": null,
+  "webLinksAddon": new WebLinksAddon.WebLinksAddon() // Also not proper ES6 module.
+};
+
+
 // Set up the console terminal.
 ctx.term.loadAddon(ctx.fitAddon);
 ctx.term.loadAddon(ctx.webLinksAddon);
 ctx.term.open(doc.terminal);
 ctx.fitAddon.fit();
 
-function convertUint8ArrayToBinaryString(u8Array) {
-  var len = u8Array.length, b_str = "";
-  for (var i=0; i<len; i++) {
-    b_str += String.fromCharCode(u8Array[i]);
-  }
-  return b_str;
-}
-
-function convertBinaryStringToUint8Array(bStr) {
-  var i, len = bStr.length, u8_array = new Uint8Array(len);
-  for (var i = 0; i < len; i++) {
-    u8_array[i] = bStr.charCodeAt(i);
-  }
-  return u8_array;
-}
-
-function handleFileSelect(evt) {
-  var file = evt.target.files[0];
-
-  if (!file) return;
-
-  var reader = new FileReader();
-
-  reader.onload = (function(theFile) {
-    return function(e) {
-      let file1 = e.target.result;
-      evt.target.data = file1;
-    };
-  })(file);
-
-  reader.readAsBinaryString(file);
-}
-
-async function lockSerialIO(func) {
-  console.log("Lock");
-  // Returns a promise.
-  return navigator.locks.request('serialOperation', func)
-}
-
-function pollSerialStart() {
-  if (!ctx.pollSerialInterval) {
-  ctx.pollSerialInterval = setInterval(pollSerial, 100);
-  }
-}
-
-function pollSerialStop() {
-  if (ctx.pollSerialInterval) {
-  clearInterval(ctx.pollSerialInterval);
-  ctx.pollSerialInterval = null;
-  }
-}
-
-async function pollSerial(e)
-{
-  return await navigator.locks.request('serialOperation', {ifAvailable: true}, async lock => {
-    if (!lock) {
-      return;
-    }
-    if (ctx.pollSerialInterval) {
-      if (ctx.device.readable) {
-        try {
-          let val = await ctx.transport.rawRead({timeout: 1});
-          if (typeof val !== 'undefined') {
-            ctx.term.write(val);
-          }
-        } catch (e) {
-          if (e.constructor.name != "TimeoutError") {
-            console.error(e);
-          }
-        }
-      }
-      else {
-        console.log("device wasn't readable");
-        cleanUp();
-      }
-    }
-  });
-}
-
-function _sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function doConnect() {
-  const options = {
-    filters: [
-    // This is the vendor and product ID for generic CP2102 serial-to-USB adapter
-    // chips, and matches the ESP32 Audio Kit. Although Silicon Labs will sell unique
-    // USB product IDs to customers, one is not used for the ESP32 Audio Kit.
-    // The physical chip is probably a Chinese CP201 clone, rather than the Silicon
-    // Labs one.
-    //
-    // Because the CP201 USB ID is so generic, this will also attach all manner
-    // of IoT and Arduino devices.
-    { usbVendorId: 0x10c4, usbProductId: 0xea60 }
-    ]
-  };
-  try {
-    ctx.device = await navigator.serial.requestPort(options);
-    ctx.transport = new Transport(ctx.device);
-    ctx.device.addEventListener('disconnect', cleanUp);
-    navigator.serial.addEventListener('disconnect', cleanUp);
-    ctx.esploader = new ESPLoader(ctx.transport, doc.programmingBaudrates.value, ctx.term);
-
-    ctx.chip = await esploader.main_fn();
-
-    // Temporarily broken
-    // await esploader.flash_id();
-
-    console.log("Settings done for :" + ctx.chip);
-    doc.deviceName.innerHTML = ctx.chip;
-    connectButton.style.display = "none";
-
-    await _sleep(100);
-    pollSerialStart();
-    esploader.console_mode();
-  } catch(e) {
-    console.error(e);
-    ctx.term.writeln(`Error: ${e.message}`);
-    cleanUp();
-    return;
-  }
-}
+// Wire up all of the buttons.
+doc.addFileButton.onclick = doAddFile;
 doc.connectButton.onclick = doConnect;
-
-async function doReset() {
-  await lockSerialIO(async lock => {
-    await esploader.console_mode();
-    await esploader.hard_reset();
-  });
-}
+doc.disconnectButton.onclick = doDisconnect;
+doc.eraseButton.onclick = doErase;
+doc.goToProgrammingPageButton.onclick = showProgramPage;
+doc.programButton.onclick = doProgram;
 doc.resetButton.onclick = doReset;
 
-async function doErase() {
-  await lockSerialIO(async lock => {
-    doc.eraseButton.disabled = true;
+// Attempt to close an open serial device before unloading the page, because
+// the browser sometimes seems to leave it open, and then we can't open the
+// device again.
+addEventListener('beforeunload', cleanUp);
+addEventListener('unload', cleanUp);
 
-    try{
-      await esploader.program_mode();
-      await esploader.erase_flash();
-    } catch (e) {
-      console.error(e);
-      ctx.term.writeln(`Error: ${e.message}`);
-    } finally {
-      doc.eraseButton.disabled = false;
-    }
-  });
-}
-doc.eraseButton.onclick = doErase;
+doAddFile();
 
+// Add a file to the list of files to be programmed.
 function doAddFile() {
   var rowCount = doc.fileTable.rows.length;
   var row = doc.fileTable.insertRow(rowCount);
@@ -248,22 +123,194 @@ function doAddFile() {
     cell4.appendChild(element4);
   }
 }
-addFileButton.onclick = doAddFile;
+
+// Connect to an ESP device.
+async function doConnect() {
+  const options = {
+    filters: [
+    // This is the vendor and product ID for generic CP2102 serial-to-USB adapter
+    // chips, and matches the ESP32 Audio Kit. Although Silicon Labs will sell unique
+    // USB product IDs to customers, one is not used for the ESP32 Audio Kit.
+    // The physical chip is probably a Chinese CP201 clone, rather than the Silicon
+    // Labs one.
+    //
+    // Because the CP201 USB ID is so generic, this will also attach all manner
+    // of IoT and Arduino devices.
+    { usbVendorId: 0x10c4, usbProductId: 0xea60 }
+    ]
+  };
+  try {
+    ctx.device = await navigator.serial.requestPort(options);
+    ctx.transport = new Transport(ctx.device);
+    ctx.device.addEventListener('disconnect', showConnectPage);
+    navigator.serial.addEventListener('disconnect', showConnectPage);
+    showConsolePage();
+    ctx.esploader = new ESPLoader(ctx.transport, doc.programmingBaudrates.value, ctx.term);
+
+    ctx.chip = await ctx.esploader.main_fn();
+
+    // Temporarily broken
+    // await ctx.esploader.flash_id();
+
+    console.log("Settings done for :" + ctx.chip);
+    doc.deviceName.innerHTML = ctx.chip;
+
+    await _sleep(100);
+    pollSerialStart();
+    ctx.esploader.console_mode();
+    pollSerialStart();
+  } catch(e) {
+    console.error(e);
+    ctx.term.writeln(`Error: ${e.message}`);
+    cleanUp();
+    return;
+  }
+}
+
+
+// Erase the FLASH of an ESP device.
+async function doErase() {
+  await lockSerialIO(async lock => {
+    doc.eraseButton.disabled = true;
+
+    try{
+      await ctx.esploader.program_mode();
+      await ctx.esploader.erase_flash();
+    } catch (e) {
+      console.error(e);
+      ctx.term.writeln(`Error: ${e.message}`);
+    } finally {
+      doc.eraseButton.disabled = false;
+    }
+  });
+}
+
+// Reset the ESP device.
+async function doReset() {
+  await lockSerialIO(async lock => {
+    await ctx.esploader.console_mode();
+    await ctx.esploader.hard_reset();
+  });
+}
+
+function handleFileSelect(evt) {
+  var file = evt.target.files[0];
+
+  if (!file) return;
+
+  var reader = new FileReader();
+
+  reader.onload = (function(theFile) {
+    return function(e) {
+      let file1 = e.target.result;
+      evt.target.data = file1;
+    };
+  })(file);
+
+  reader.readAsBinaryString(file);
+}
+
+// Lock the serial I/O, so that pollSerial doesn't run when a programming function
+// is running.
+async function lockSerialIO(func) {
+  console.log("Lock");
+  // Returns a promise.
+  return navigator.locks.request('serialOperation', func)
+}
+
+// Display serial input on the console.
+function pollSerialStart() {
+  if (!ctx.pollSerialInterval) {
+  ctx.pollSerialInterval = setInterval(pollSerial, 100);
+  }
+}
+
+// Stop displaying serial input on the console.
+function pollSerialStop() {
+  if (ctx.pollSerialInterval) {
+  clearInterval(ctx.pollSerialInterval);
+  ctx.pollSerialInterval = null;
+  }
+}
+
+// Called every 1/10 second, this looks for serial input and if found, displays it on
+// the console.
+async function pollSerial(e)
+{
+  return await navigator.locks.request('serialOperation', {ifAvailable: true}, async lock => {
+    if (!lock) {
+      return;
+    }
+    if (ctx.pollSerialInterval) {
+      if (ctx.device.readable) {
+        try {
+          let val = await ctx.transport.rawRead({timeout: 1});
+          if (typeof val !== 'undefined') {
+            ctx.term.write(val);
+          }
+        } catch (e) {
+          if (e.constructor.name != "TimeoutError") {
+            console.error(e);
+          }
+        }
+      }
+      else {
+        console.log("device wasn't readable");
+        cleanUp();
+      }
+    }
+  });
+}
 
 function removeRow(row) {
   const rowIndex = Array.from(doc.fileTable.rows).indexOf(row);
   doc.fileTable.deleteRow(rowIndex);
 }
 
-// to be called on disconnect - remove any stale references of older connections if any
-function cleanUp() {
+// There are three pages to the program: Connect, Console, and Program.
+// These methods show one or the other.
+//
+// The page used to connect to an ESP device.
+function showConnectPage() {
+  cleanUp();
+  doc.connectPage.style.display = "block";
+  doc.consolePage.style.display = "none";
+  doc.programPage.style.display = "none";
+}
+
+// The page for the serial console.
+function showConsolePage() {
+  doc.connectPage.style.display = "none";
+  doc.programPage.style.display = "none";
+  doc.consolePage.style.display = "block";
+}
+
+// The page for programming and erasing the ESP, it also shows information about the
+// chip.
+function showProgramPage() {
+  pollSerialStop();
+  doc.connectPage.style.display = "none";
+  doc.consolePage.style.display = "none";
+  doc.programPage.style.display = "block";
+  ctx.esploader.program_mode();
+  doc.body.style.display = "block";
+}
+
+// Sleep for the given number of milliseconds.
+function _sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// When the device is disconnected, clean up any stale references and get it ready
+// to connect again.
+async function cleanUp() {
   if (ctx.device) {
     console.log("Disconnected.");
     ctx.term.writeln("Disconnected.");
     pollSerialStop();
-    ctx.transport.disconnect();
+    await ctx.transport.disconnect();
     try {
-      ctx.device.forget();
+      await ctx.device.forget();
     } catch {};
     ctx.device = null;
     ctx.transport = null;
@@ -272,13 +319,12 @@ function cleanUp() {
 }
 
 async function doDisconnect() {
-  if(ctx.transport)
+  if(ctx.transport) {
     await ctx.transport.disconnect();
-
+  }
   ctx.term.clear();
-  cleanUp();
+  showConnectPage();
 };
-doc.disconnectButton.onclick = doDisconnect;
 
 function validate_program_inputs() {
   let offsetArr = []
@@ -366,12 +412,3 @@ async function doProgram() {
     }
   });
 }
-doc.programButton.onclick = doProgram;
-
-// Attempt to close an open serial device before unloading the page, because
-// the browser sometimes seems to leave it open, and then we can't open the
-// device again.
-addEventListener('beforeunload', cleanUp);
-addEventListener('unload', cleanUp);
-
-doAddFile();

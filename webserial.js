@@ -111,7 +111,7 @@ class Transport {
 
     async read({timeout=0, min_data=12} = {}) {
         decoder = new TextDecoder();
-        return await lock(async lock => {
+        return await this.lock(async () => {
             let t;
             let packet = this.left_over;
             this.left_over = new Uint8Array(0);
@@ -154,7 +154,7 @@ class Transport {
     }
 
     async rawRead({timeout=0} = {}) {
-        return await lock(async lock => {
+        return await this.lock(async () => {
             if (this.left_over.length != 0) {
                 const p = this.left_over;
                 this.left_over = new Uint8Array(0);
@@ -187,13 +187,13 @@ class Transport {
     }    
 
     async setRTS(state) {
-        return await lock(async lock => {
+        return await this.lock(async () => {
             await this.device.setSignals({requestToSend:state});
         });
     }
 
     async setDTR(state) {
-        return await lock(async lock => {
+        return await this.lock(async () => {
             await this.device.setSignals({dataTerminalReady:state});
         });
     }
