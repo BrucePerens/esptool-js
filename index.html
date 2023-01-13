@@ -7,8 +7,10 @@
   <title>ESP Tool</title>
   <link rel="stylesheet" href="node_modules/xterm/css/xterm.css">
   <link rel="stylesheet" href="node_modules/xterm/css/xterm.css">
-  <link rel="stylesheet" href= "https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-  <link href="https://fonts.googleapis.com/css?family=Orbitron" rel="stylesheet">
+  <link rel="stylesheet" href=
+  "https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <link href="https://fonts.googleapis.com/css?family=Orbitron"
+  rel="stylesheet">
   <link rel="icon" href="favicon.ico">
   <script type="importmap">
     {
@@ -31,79 +33,80 @@
   <script type="module">
     import 'index';
   </script>
-  <!-- CryptoJS 4.1.1 doesn't work as a native ES6 module. -->
-
+  <!-- The browser can't load CryptoJS 4.1.1 as a native ES6 module. -->
   <script src="./node_modules/crypto-js/crypto-js.js"></script>
 </head>
+
 <body>
-  <div class="container" id="main">
-    <div id="program">
-      <h3>ESP32 Tool</h3><label for="programmingBaudrates" id=
-      "lblProgrammingBaudrate">Programming Baudrate:</label>
-      <select name="programmingBaudrates" id=
-      "programmingBaudrates">
-        <option value="921600">
-          921600
-        </option>
-        <option value="460800">
-          460800
-        </option>
-        <option value="230400">
-          230400
-        </option>
-        <option value="115200">
-          115200
-        </option>
-      </select>
-      <label for="romBaudrates" id="lblRomBaudrate">ROM Baudrate:</label> 
-      <!-- Default ROM baudrate for ESP32 is 115200. -->
-       <select name="romBaudrates" id="romBaudrates">
-        <option value="115200">
-          115200
-        </option>
-        <option value="230400">
-          230400
-        </option>
-        <option value="460800">
-          460800
-        </option>
-        <option value="921600">
-          921600
-        </option>
-      </select>
-      <label style="display:none" id= "lblConnTo">Connected to device:</label>
-      <input class= "btn btn-info btn-sm" type="button" id="connectButton" value="Connect">
-      <input class="btn btn-warning btn-sm" type= "button" id="disconnectButton" value="Disconnect">
-      <input class="btn btn-danger btn-sm" type="button" id="eraseButton" value="Erase Flash">
-      <input class="btn btn-info btn-sm" type="button" id="resetButton" value="Reset" style="display:none;">
-      <input class="btn btn-info btn-sm" type="button" id="stopButton" value="Stop" style="display:none;">
-      <div class="alert alert-danger alert-dismissible" id= "alertDiv" style="display:none; margin-top:10px">
-        <a href="#" class="close" aria-label="close" onclick= "$('.alert').hide()">×</a>
-        <span id="alertmsg"></span>
-      </div>
-      <div id="files">
-        <table class="table table-striped" id="fileTable">
-          <thead class="thead-light">
-            <tr>
-              <th>Flash Address</th>
-              <th>File</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="tableBody"></tbody>
-        </table>
-        <input class="btn btn-info btn-sm" type="button"
-        id="addFile" value="Add File">
-        <input class= "btn btn-info btn-sm" type="button" id="programButton"
-        value="Program">
-      </div>
-      <output id="list"></output>
+  <div id="connectPage">
+    <h3>ESP32 Tool</h3><label for="programmingBaudrates" id="lblProgrammingBaudrate">Programming Baudrate:</label>
+    <select name="programmingBaudrates" id="programmingBaudrates">
+      <option value="921600">
+        921600
+      </option>
+      <option value="460800">
+        460800
+      </option>
+      <option value="230400">
+        230400
+      </option>
+      <option value="115200">
+        115200
+      </option>
+    </select> <label for="romBaudrates" id="lblRomBaudrate">ROM
+    Baudrate:</label> 
+    <!-- Default ROM baudrate for ESP32 is 115200. -->
+     <select name="romBaudrates" id="romBaudrates">
+      <option value="115200">
+        115200
+      </option>
+      <option value="230400">
+        230400
+      </option>
+      <option value="460800">
+        460800
+      </option>
+      <option value="921600">
+        921600
+      </option>
+    </select> <input class="btn btn-info btn-sm" type="button" id=
+    "connectButton" value="Connect">
+  </div>
+
+  <div id="programPage">
+    <label>Connected to device:</label>
+    <output id="deviceName"></output>
+    <input class="btn btn-warning btn-sm" type=
+    "button" id="disconnectButton" value="Disconnect">
+    <input class="btn btn-danger btn-sm" type="button" id=
+    "eraseButton" value="Erase Flash">
+    <div class="alert alert-danger alert-dismissible" id="alertDiv"
+    style="display:none; margin-top:10px">
+      <a href="#" class="close" aria-label="close" onclick=
+      "$('.alert').hide()">×</a> <span id="alertmsg"></span>
     </div>
+    <div id="files">
+      <table class="table table-striped" id="fileTable">
+        <thead class="thead-light">
+          <tr>
+            <th>Flash Address</th>
+            <th>File</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table><input class="btn btn-info btn-sm" type="button" id="addFileButton" value="Add File">
+      <input class= "btn btn-info btn-sm" type="button" id="programButton" value= "Program">
+    </div><output id="list"></output>
+  </div>
+
+  <div id="consolePage">
     <div id="console">
+      <input class="btn btn-info btn-sm" type="button" id=
+      "resetButton" value="Reset" style="display:none;">
       <label style="display:none" id="lblConsoleFor">Connected to
       device:</label>
-    </div>
-    <output id="terminal"></output>
+    </div><output id="terminal"></output>
   </div>
 </body>
 </html>
