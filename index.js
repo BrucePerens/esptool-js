@@ -9,39 +9,53 @@ const stopButton = document.getElementById("stopButton");
 const eraseButton = document.getElementById("eraseButton");
 const programButton = document.getElementById("programButton");
 const filesDiv = document.getElementById("files");
-const terminal = document.getElementById("terminal");
 const programDiv = document.getElementById("program");
 const consoleDiv = document.getElementById("console");
 const lblConnTo = document.getElementById("lblConnTo");
 const tableBody = document.getElementById("tableBody");
 const table = document.getElementById('fileTable');
-const alertDiv = document.getElementById('alertDiv');
 
-//import { Transport } from './cp210x-webusb.js'
-import { Transport } from './webserial.js'
-import { ESPLoader } from './ESPLoader.js'
-import { ESPError } from './error.js'
+// These are all defined in the importmap.
+import 'bootstrap'
+import 'error'
+import 'ESPLoader'
+import 'jquery'
+import 'pako'
+import 'webserial'
+import 'xterm';
+import 'xterm-addon-fit';
+import 'xterm-addon-web-links';
 
 const term = new Terminal();
-// const fitAddon = new FitAddon();
-// term.loadAddon(fitAddon);
-term.loadAddon(new WebLinksAddon());
+// Xterm plugin module exports probably work right in Node, but not the browser, thus
+// the name doubling here.
+const fitAddon = new FitAddon.FitAddon();
+const webLinksAddon = new WebLinksAddon.WebLinksAddon();
+const terminal = document.getElementById("terminal");
+term.loadAddon(fitAddon);
+term.loadAddon(webLinksAddon);
 term.open(terminal);
-// fitAddon.fit();
+fitAddon.fit();
 
-let device = null;
-let transport;
-let chip = null;
-let esploader;
-let file1 = null;
-let connected = false;
-let index = 1;
-let pollSerialInterval;
+var chip, device, esploader, pollSerialInterval, transport;
 
 disconnectButton.style.display = "none";
 eraseButton.style.display = "none";
 filesDiv.style.display = "none";
 
+function checkCapabilities() {
+  const browserLacksAPI = `
+   <html><body>
+   <p>Sorry, this browser version doesn't have the required APIs. Try a newer version.
+   A current version of Chrome should work (except perhaps on iOS). 
+   </body><html>`;
+
+  if (typeof SerialPort == "undefined" || typeof navigator.locks == "undefined") {
+    document.open();
+    document.write(browserLacksAPI);
+    document.close();
+  }
+}
 
 function convertUint8ArrayToBinaryString(u8Array) {
 	var i, len = u8Array.length, b_str = "";
@@ -59,6 +73,10 @@ function convertBinaryStringToUint8Array(bStr) {
 	return u8_array;
 }
 
+async function lock_serial_io(func) {
+  return await navigator.locks.request('serialOperation', func)
+}
+
 function handleFileSelect(evt) {
     var file = evt.target.files[0];
 
@@ -68,7 +86,7 @@ function handleFileSelect(evt) {
 
     reader.onload = (function(theFile) {
         return function(e) {
-            file1 = e.target.result;
+            let file1 = e.target.result;
             evt.target.data = file1;
         };
     })(file);
@@ -95,7 +113,7 @@ function pollSerialStop() {
 
 async function pollSerial(e)
 {
-    return await navigator.locks.request('serialOperation', {ifAvailable: true}, async (lock) => {
+    return await navigator.locks.request('serialOperation', {ifAvailable: true}, async lock => {
         if (!lock) {
             return;
         }
@@ -141,7 +159,6 @@ connectButton.onclick = async () => {
             device.addEventListener('disconnect', cleanUp);
             navigator.serial.addEventListener('disconnect', cleanUp);
             esploader = new ESPLoader(transport, programmingBaudrates.value, term);
-            connected = true;
     
             chip = await esploader.main_fn();
     
@@ -176,20 +193,20 @@ connectButton.onclick = async () => {
 }
 
 resetButton.onclick = async () => {
-    return await navigator.locks.request('serialOperation', async (lock) => {
+    await lock_serial_io(async lock => {
         await esploader.console_mode();
         await esploader.hard_reset();
     });
 }
 
 stopButton.onclick = async () => {
-    return await navigator.locks.request('serialOperation', async (lock) => {
+    await lock_serial_io(async lock => {
         await esploader.program_mode();
     });
 }
 
 eraseButton.onclick = async () => {
-    return await navigator.locks.request('serialOperation', async (lock) => {
+    await lock_serial_io(async lock => {
         eraseButton.disabled = true;
 
         try{
@@ -266,7 +283,6 @@ function cleanUp() {
         device = null;
         transport = null;
         chip = null;
-        connected = false;
         lblProgrammingBaudrate.style.display = "initial";
         programmingBaudrates.style.display = "initial";
         lblRomBaudrate.style.display = "initial";
@@ -278,7 +294,6 @@ function cleanUp() {
         stopButton.style.display = "none";
         lblConnTo.style.display = "none";
         filesDiv.style.display = "none";
-        alertDiv.style.display = "none";
         consoleDiv.style.display = "initial";
         pollSerialInterval = null;
     }
@@ -326,18 +341,13 @@ function validate_program_inputs() {
 }
 
 programButton.onclick = async () => {
-    return await navigator.locks.request('serialOperation', async (lock) => {
-        const alertMsg = document.getElementById("alertmsg");
+    await lock_serial_io(async lock => {
         const err = validate_program_inputs();
     
         if (err != "success") {
-            alertMsg.innerHTML = "<strong>" + err + "</strong>";
-            alertDiv.style.display = "block";
-            return;
+          alert(err);
+          return;
         }
-    
-        // Hide error message
-        alertDiv.style.display = "none";
     
         const fileArray = [];
         const progressBars = [];
@@ -391,3 +401,4 @@ addEventListener('beforeunload', cleanUp);
 addEventListener('unload', cleanUp);
 
 addFile.onclick();
+checkCapabilities();

@@ -1,11 +1,13 @@
 # Javascript implementation of esptool
 
-This is a modification of https://github.com/espressif/esptool-js for the K6BP Rigcontrol
+This is a modification of https://github.com/espressif/esptool-js
 project. It is different from the Espressif esptool-js in that:
-* The connection dialogue only presents devices with a CP2102 Serial to USB adapter which has a USB vendor ID of 0x10c4 and product ID of 0xea60. This corresponds to an ESP32 plugged in to USB. The CP2102 can be configured with a user-unique USB ID, but the ESP32 uses the Silicon Labs generic ID for the chip. The Espressif version of this tool presents every serial port in your system, which can be confusing for the naive user.
+* The connection dialogue only presents devices with a CP2102 Serial to USB adapter which has a USB vendor ID of 0x10c4 and product ID of 0xea60. This corresponds to an ESP32 plugged in to USB. The CP2102 can be configured with a user-unique USB ID, but the ESP32 uses the Silicon Labs generic ID for the chip. The Espressif version of this tool presents every serial port in your system, which can be confusing for the beginning user.
 * The program recovers better from a failure to open a device.
-* The program is more robust about device disconnection. It detects when the device is unplugged from USB. It attempts to disconnect the device when the web page is unloaded.
-* The web page is more space-efficient.
+* The program is more robust about device disconnection. It detects when the device is unplugged from USB. It attempts to disconnect the device when the web page is unloaded (which the browser should do, but apparently doesn't always).
+* The UI is rewritten to be simpler.
+* The test for Safari, which was incompatible, was replaced with a non-browser-specific one which tests for the presence of the SerialPort and navigator.lock APIs.
+* No dependency on npm or bundlers, no build. Uses ES6 importmap and CDNs.
 
 This program is derived from the Espressif origin/gh-pages branch, not the newest branch,
 as the newest branch doesn't work on my hardware (or at all, for all I know) and I can't

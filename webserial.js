@@ -13,6 +13,10 @@ class Transport {
         return "WebSerial VendorID 0x"+info.usbVendorId.toString(16)+ " ProductID 0x"+info.usbProductId.toString(16);
     }
 
+    async lock(func) {
+      return await navigator.locks.request('readSerial', func);
+    }
+
     slip_writer(data) {
         var count_esc = 0;
         var i = 0, j = 0;
@@ -106,7 +110,7 @@ class Transport {
 
     async read({timeout=0, min_data=12} = {}) {
         decoder = new TextDecoder();
-        return await navigator.locks.request('readSerial', async lock => {
+        return await lock(async lock => {
             let t;
             let packet = this.left_over;
             this.left_over = new Uint8Array(0);
@@ -149,7 +153,7 @@ class Transport {
     }
 
     async rawRead({timeout=0} = {}) {
-        return await navigator.locks.request('readSerial', async (lock) => {
+        return await lock(async lock => {
             if (this.left_over.length != 0) {
                 const p = this.left_over;
                 this.left_over = new Uint8Array(0);
@@ -182,13 +186,13 @@ class Transport {
     }    
 
     async setRTS(state) {
-        return await navigator.locks.request('readSerial', async (lock) => {
+        return await lock(async lock => {
             await this.device.setSignals({requestToSend:state});
         });
     }
 
     async setDTR(state) {
-        return await navigator.locks.request('readSerial', async (lock) => {
+        return await lock(async lock => {
             await this.device.setSignals({dataTerminalReady:state});
         });
     }
