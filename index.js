@@ -37,7 +37,7 @@ term.loadAddon(webLinksAddon);
 term.open(terminal);
 fitAddon.fit();
 
-var chip, device, esploader, pollSerialInterval, transport;
+var chip = null, device = null, esploader = null, pollSerialInterval = null, transport = null;
 
 disconnectButton.style.display = "none";
 eraseButton.style.display = "none";
@@ -74,7 +74,9 @@ function convertBinaryStringToUint8Array(bStr) {
 }
 
 async function lock_serial_io(func) {
-  return await navigator.locks.request('serialOperation', func)
+  console.log("Lock");
+  // Returns a promise.
+  return navigator.locks.request('serialOperation', func)
 }
 
 function handleFileSelect(evt) {

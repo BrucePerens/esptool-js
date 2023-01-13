@@ -14,7 +14,8 @@ class Transport {
     }
 
     async lock(func) {
-      return await navigator.locks.request('readSerial', func);
+      // Returns a promise.
+      return navigator.locks.request('readSerial', func);
     }
 
     slip_writer(data) {
