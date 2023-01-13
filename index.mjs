@@ -13,13 +13,14 @@ export { showConnectPage, showConsolePage, showProgramPage };
 
 // Check that the required APIs are available.
 if (
-    typeof Serial == "undefined"
-    || typeof SerialPort == "undefined"
-    || typeof navigator == "undefined"
-    || typeof navigator.locks == "undefined"
-    || typeof HTMLScriptElement == "undefined"
+       typeof fetch == "undefined"
+    || typeof FileList == "undefined"
     || typeof HTMLScriptElement.supports == "undefined"
-    || typeof fetch == "undefined"
+    || typeof HTMLScriptElement == "undefined"
+    || typeof navigator.locks == "undefined"
+    || typeof navigator == "undefined"
+    || typeof Serial == "undefined"
+    || typeof SerialPort == "undefined"
     || HTMLScriptElement.supports("module") != true
     || HTMLScriptElement.supports("importmap") != true
    ) {
@@ -47,12 +48,15 @@ const doc = {};
   "fileTable",
   "goToConsolePageButton",
   "goToProgramPageButton",
+  "localFileInput",
   "programButton",
   "programPage",
   "programmingBaudrates",
+  "progressPage",
   "resetButton",
   "romBaudrates",
-  "terminal"
+  "terminal",
+  "urlFileInput"
 ].forEach(e => { doc[e] = document.getElementById(e) });
 
 // These would otherwise be global variables.
@@ -62,7 +66,7 @@ const ctx = {
   "esploader": null,
   "fitAddon": new FitAddon.FitAddon(), // Not a proper ES6 module for the Browser.
   "pollSerialInterval": null,
-  "term": new Terminal({ "cursorBlink": true, "cols": 80, "rows": 50 }),
+  "term": new Terminal({ "cursorBlink": true, "cols": 80, "rows": 25 }),
   "transport": null,
   "webLinksAddon": new WebLinksAddon.WebLinksAddon() // Also not proper ES6 module.
 };
@@ -72,10 +76,8 @@ const ctx = {
 ctx.term.loadAddon(ctx.fitAddon);
 ctx.term.loadAddon(ctx.webLinksAddon);
 ctx.term.open(doc.terminal);
-ctx.fitAddon.fit();
 
 // Wire up all of the buttons.
-doc.addFileButton.onclick = doAddFile;
 doc.connectButton.onclick = doConnect;
 doc.disconnectButton.onclick = doDisconnect;
 doc.disconnectConsoleButton.onclick = doDisconnect;
@@ -95,6 +97,7 @@ doAddFile();
 
 // Add a file to the list of files to be programmed.
 function doAddFile() {
+  return;
   var rowCount = doc.fileTable.rows.length;
   var row = doc.fileTable.insertRow(rowCount);
   
@@ -170,7 +173,6 @@ async function doConnect() {
     doc.deviceName.innerHTML = ctx.chip;
 
     await _sleep(100);
-    pollSerialStart();
     ctx.esploader.console_mode();
     pollSerialStart();
   } catch(e) {
@@ -201,6 +203,7 @@ async function doErase() {
 
 async function doConsoleMode() {
   showConsolePage();
+  pollSerialStart();
   await ctx.esploader.console_mode();
 }
 
@@ -232,7 +235,6 @@ function handleFileSelect(evt) {
 // Lock the serial I/O, so that pollSerial doesn't run when a programming function
 // is running.
 async function lockSerialIO(func) {
-  console.log("Lock");
   // Returns a promise.
   return navigator.locks.request('serialOperation', func)
 }
@@ -240,15 +242,15 @@ async function lockSerialIO(func) {
 // Display serial input on the console.
 function pollSerialStart() {
   if (!ctx.pollSerialInterval) {
-  ctx.pollSerialInterval = setInterval(pollSerial, 100);
+    ctx.pollSerialInterval = setInterval(pollSerial, 100);
   }
 }
 
 // Stop displaying serial input on the console.
 function pollSerialStop() {
   if (ctx.pollSerialInterval) {
-  clearInterval(ctx.pollSerialInterval);
-  ctx.pollSerialInterval = null;
+    clearInterval(ctx.pollSerialInterval);
+    ctx.pollSerialInterval = null;
   }
 }
 
@@ -302,17 +304,18 @@ function showConsolePage() {
   doc.connectPage.style.display = "none";
   doc.programPage.style.display = "none";
   doc.consolePage.style.display = "block";
+  ctx.fitAddon.fit();
 }
 
 // The page for programming and erasing the ESP, it also shows information about the
 // chip.
 function showProgramPage() {
   pollSerialStop();
+  doc.progressPage.style.display = "none";
   doc.connectPage.style.display = "none";
   doc.consolePage.style.display = "none";
   doc.programPage.style.display = "block";
   ctx.esploader.program_mode();
-  doc.body.style.display = "block";
 }
 
 // Sleep for the given number of milliseconds.

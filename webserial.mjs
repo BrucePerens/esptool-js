@@ -1,4 +1,4 @@
-import { TimeoutError } from "./error.js";
+import { TimeoutError } from "./error.mjs";
 let decoder = new TextDecoder();
 
 class Transport {

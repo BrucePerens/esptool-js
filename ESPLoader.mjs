@@ -1,4 +1,4 @@
-import {ESPError, TimeoutError} from "./error.js";
+import {ESPError, TimeoutError} from "./error.mjs";
 
 const MAGIC_TO_CHIP = {
     [0x00f01d83]: () => import('./targets/esp32.js'),
@@ -718,6 +718,7 @@ class ESPLoader {
             return;
         }
         this.mode = undefined;
+        await this.transport.setDTR(false);
 	await this.hard_reset(); // Changes baud rate to ROM baudrate.
         await this.transport.setDTR(false);
         await this.transport.setRTS(true);

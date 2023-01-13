@@ -1,7 +1,7 @@
 // Classes for handling the ESP binary image file.
 
 import { ESPError } from './error.mjs'
-export { ESPBinaryImageFile }
+export { ESPBinaryImage }
 
 // Class representing an ESP binary image file.
 class ESPBinaryImage {

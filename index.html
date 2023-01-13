@@ -5,10 +5,8 @@
   "HTML Tidy for HTML5 for Linux version 5.6.0">
   <meta charset="utf-8">
   <title>ESP Tool</title>
-  <link rel="stylesheet" href="node_modules/xterm/css/xterm.css">
-  <link rel="stylesheet" href="node_modules/xterm/css/xterm.css">
-  <link rel="stylesheet" href=
-  "https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/xterm@5.1.0/css/xterm.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
   <link href="https://fonts.googleapis.com/css?family=Orbitron"
   rel="stylesheet">
   <link rel="icon" href="favicon.ico">
@@ -34,7 +32,8 @@
     import 'index';
   </script>
   <!-- The browser can't load CryptoJS 4.1.1 as a native ES6 module. -->
-  <script src="./node_modules/crypto-js/crypto-js.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js">
+  </script>
 </head>
 
 <body id="body">
@@ -81,30 +80,64 @@
   </div>
 
   <div id="programPage" style="display:none;">
-    <label>Connected to device:</label>
-    <output id="deviceName"></output>
     <input class="btn btn-warning btn-sm" type="button" id="goToConsolePageButton" value="Console">
     <input class="btn btn-warning btn-sm" type="button" id="disconnectButton" value="Disconnect">
     <input class="btn btn-danger btn-sm" type="button" id="eraseButton" value="Erase Flash">
-    <div class="alert alert-danger alert-dismissible" id="alertDiv"
-    style="display:none; margin-top:10px">
-      <a href="#" class="close" aria-label="close" onclick=
-      "$('.alert').hide()">×</a> <span id="alertmsg"></span>
-    </div>
-    <div id="files">
-      <table class="table table-striped" id="fileTable">
-        <thead class="thead-light">
-          <tr>
-            <th>Flash Address</th>
-            <th>File</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-      </table><input class="btn btn-info btn-sm" type="button" id="addFileButton" value="Add File">
-      <input class= "btn btn-info btn-sm" type="button" id="programButton" value= "Program">
-    </div><output id="list"></output>
+    <input class="btn btn-danger btn-sm" type="button" id="programButton" value="Program">
+    <table>
+      <tr>
+        <th>
+          <label for="deviceName">Connected to device:</label>
+        </th>
+        <td>
+          <output id="deviceName"></output>
+        </td>
+      </tr>
+      <tr>
+        <th>
+          <label for="deviceFeatures">Features:</label>
+        </th>
+        <td>
+          <output id="deviceFeatures"></output>
+        </td>
+      </tr>
+      <tr>
+        <th>
+          <label for="crystalFrequency">Crystal Freqency:</label>
+        </th>
+        <td>
+          <output id="crystalFrequency"></output>
+        </td>
+      </tr>
+      <tr>
+        <th>
+          <label for="macAddress">MAC Address:</label>
+        </th>
+        <td>
+          <output id="macAddress"></output>
+        </td>
+      </tr>
+    </table>
+    <table>
+      <tr>
+        <th>
+           <label for="localFileInput">Add local files:</label>
+        </td>
+        <td>
+          <input type="file" id="localFileInput" multiple accept=".bin">
+        </td>
+      </tr>
+      <tr>
+        <th>
+           <label for="urlFileInput">Add file at URL:</label>
+        </th>
+        <td>
+          <input type="url" id="urlFileInput" pattern="*.bin">
+        </td>
+      </tr>
+    </table>
   </div>
-
+  <div id="progressPage">
+  </div>
 </body>
 </html>
