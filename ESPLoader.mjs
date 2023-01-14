@@ -665,6 +665,9 @@ class ESPLoader {
             let pkt = this._appendArray(this._int_to_bytearray(baudrate), this._int_to_bytearray(second_arg));
             let resp = await this.command({op:this.ESP_CHANGE_BAUDRATE, data:pkt});
         }
+        if (!this.transport.device.readable) {
+          console.log("device not readable in change_baud()");
+        }
         await this.transport.disconnect();
         await this._sleep(50);
         await this.transport.connect({baud:baudrate});
@@ -721,9 +724,9 @@ class ESPLoader {
         await this.transport.setDTR(false);
 	await this.hard_reset(); // Changes baud rate to ROM baudrate.
         await this.transport.setDTR(false);
-        await this.transport.setRTS(true);
-        await this._sleep(100);
-        await this.transport.setRTS(false);
+        // await this.transport.setRTS(true);
+        // await this._sleep(100);
+        // await this.transport.setRTS(false);
         this.mode = "console";
         this.log(`User Program Console mode at ${this.current_baudrate} baud.`);
     }

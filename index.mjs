@@ -1,4 +1,4 @@
-// Import all of the modules that are defined in the importmap.
+/ Import all of the modules that are defined in the importmap.
 import 'bootstrap';
 import 'error';
 import { ESPLoader } from 'ESPLoader';
@@ -92,6 +92,9 @@ doc.resetButton.onclick = doReset;
 // device again.
 addEventListener('beforeunload', cleanUp);
 addEventListener('unload', cleanUp);
+
+// When the window is resized, re-fit xterm to its container.
+addEventListener("resize", (event) => { ctx.fitAddon.fit(); });
 
 doAddFile();
 
@@ -203,8 +206,8 @@ async function doErase() {
 
 async function doConsoleMode() {
   showConsolePage();
-  pollSerialStart();
   await ctx.esploader.console_mode();
+  pollSerialStart();
 }
 
 // Reset the ESP device.
@@ -314,8 +317,8 @@ function showProgramPage() {
   doc.progressPage.style.display = "none";
   doc.connectPage.style.display = "none";
   doc.consolePage.style.display = "none";
+  await ctx.esploader.program_mode();
   doc.programPage.style.display = "block";
-  ctx.esploader.program_mode();
 }
 
 // Sleep for the given number of milliseconds.
@@ -430,8 +433,7 @@ async function doProgram() {
         doc.fileTable.rows[index].cells[2].style.display = "none";
         doc.fileTable.rows[index].cells[3].style.display = "initial";
       }
-      showConsolePage();
-      await esploader.console_mode();
+      await doConsoleMode();
     }
   });
 }
